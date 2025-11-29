@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Aurora Wallet – Dashboard</title>
+  <title>Aurora Wallet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * {
@@ -266,7 +266,7 @@
       <nav>
         <button type="button" data-view="dashboard" class="active">Dashboard</button>
         <button type="button" data-view="transfer">Transfer</button>
-        <!-- Escrow is not in nav; it appears after Send/Pay -->
+        <!-- Escrow is not in nav; only available after Send/Pay -->
       </nav>
     </header>
 
@@ -454,15 +454,14 @@
   </div>
 
   <script>
-    // --- Shared state and helpers ---
-
-    const AURORA_BASE_BALANCE = 4792.00;
+    const BASE_BALANCE = 4792.00;
     const ESCROW_DURATION_SECONDS = 15 * 60;
 
     let escrowTimerId = null;
     let escrowSecondsRemaining = 0;
     let escrowActive = false;
 
+    // --- localStorage helpers ---
     function getEscrowStatus() {
       return localStorage.getItem("auroraEscrowStatus") || "none";
     }
@@ -485,11 +484,18 @@
       localStorage.setItem("auroraEscrowData", JSON.stringify(data));
     }
 
+    // --- formatting helpers ---
     function formatCurrency(num) {
       return "$" + Number(num || 0).toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     }
 
     function computeAvailableBalance() {
@@ -499,131 +505,197 @@
       if (status === "active" && data && typeof data.amount === "number") {
         amountInEscrow = data.amount;
       }
-      return AURORA_BASE_BALANCE - amountInEscrow;
+      return BASE_BALANCE - amountInEscrow;
     }
 
-    // --- View switching ---
-
+    // --- view switching ---
     function showView(name) {
-      const views = document.querySelectorAll(".view");
-      views.forEach(v => v.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
       const target = document.getElementById("view-" + name);
       if (target) target.classList.add("active");
 
-      const navButtons = document.querySelectorAll("header nav button");
-      navButtons.forEach(btn => {
+      document.querySelectorAll("header nav button").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-view") === name);
       });
 
-      if (name === "dashboard") {
-        updateDashboardUI();
-      } else if (name === "transfer") {
-        updateTransferUI();
-      } else if (name === "escrow") {
-        updateEscrowUI();
-      }
+      if (name === "dashboard") updateDashboardUI();
+      if (name === "transfer") updateTransferUI();
+      if (name === "escrow")   initEscrowView();
     }
 
-    // --- Dashboard UI ---
-
+    // --- dashboard UI ---
     function updateDashboardUI() {
       const status = getEscrowStatus();
       const data = getEscrowData();
-
       let amountInEscrow = 0;
       if (status === "active" && data && typeof data.amount === "number") {
         amountInEscrow = data.amount;
       }
+      const available = BASE_BALANCE - amountInEscrow;
 
-      const available = AURORA_BASE_BALANCE - amountInEscrow;
-
-      document.getElementById("baseBalance").textContent = formatCurrency(AURORA_BASE_BALANCE);
+      document.getElementById("baseBalance").textContent = formatCurrency(BASE_BALANCE);
       document.getElementById("availableBalance").textContent = formatCurrency(available);
       document.getElementById("escrowHeld").textContent = formatCurrency(amountInEscrow);
 
       const label = document.getElementById("escrowStatusLabelDashboard");
-      if (status === "active") {
-        label.textContent = "Escrow active";
-      } else if (status === "completed") {
-        label.textContent = "Escrow accepted (completed)";
-      } else if (status === "canceled") {
-        label.textContent = "Escrow canceled, funds returned";
-      } else if (status === "expired") {
-        label.textContent = "Escrow expired";
-      } else {
-        label.textContent = "No active escrow";
-      }
+      label.textContent =
+        status === "active"   ? "Escrow active" :
+        status === "completed"? "Escrow accepted (completed)" :
+        status === "canceled" ? "Escrow canceled, funds returned" :
+        status === "expired"  ? "Escrow expired" :
+                                "No active escrow";
     }
 
-    // --- Transfer UI ---
-
+    // --- transfer UI ---
     function updateTransferUI() {
       const status = getEscrowStatus();
       const available = computeAvailableBalance();
-
       document.getElementById("availableBalanceTransfer").textContent = formatCurrency(available);
 
       const label = document.getElementById("escrowStatusLabelTransfer");
-      if (status === "active") {
-        label.textContent = "Escrow active";
-      } else if (status === "completed") {
-        label.textContent = "Escrow accepted (completed)";
-      } else if (status === "canceled") {
-        label.textContent = "Escrow canceled, funds returned";
-      } else if (status === "expired") {
-        label.textContent = "Escrow expired";
-      } else {
-        label.textContent = "No active escrow";
-      }
+      label.textContent =
+        status === "active"   ? "Escrow active" :
+        status === "completed"? "Escrow accepted (completed)" :
+        status === "canceled" ? "Escrow canceled, funds returned" :
+        status === "expired"  ? "Escrow expired" :
+                                "No active escrow";
     }
 
-    // --- Escrow UI + timer ---
-
+    // --- escrow UI + timer ---
     function updateEscrowStatusLabelEscrow() {
-      const label = document.getElementById("escrowStatusLabelEscrow");
       const status = getEscrowStatus();
-
-      if (status === "active") {
-        label.textContent = "Escrow active";
-      } else if (status === "completed") {
-        label.textContent = "Escrow accepted (completed)";
-      } else if (status === "canceled") {
-        label.textContent = "Escrow canceled, funds returned";
-      } else if (status === "expired") {
-        label.textContent = "Escrow expired";
-      } else {
-        label.textContent = "No active escrow";
-      }
-    }
-
-    function formatTime(seconds) {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      const mm = String(m).padStart(2, "0");
-      const ss = String(s).padStart(2, "0");
-      return `${mm}:${ss}`;
+      const label = document.getElementById("escrowStatusLabelEscrow");
+      label.textContent =
+        status === "active"   ? "Escrow active" :
+        status === "completed"? "Escrow accepted (completed)" :
+        status === "canceled" ? "Escrow canceled, funds returned" :
+        status === "expired"  ? "Escrow expired" :
+                                "No active escrow";
     }
 
     function updateTimerDisplay() {
       document.getElementById("escrowTimer").textContent = formatTime(escrowSecondsRemaining);
     }
 
-    function showAlert(message) {
-      const alertEl = document.getElementById("escrowAlert");
-      alertEl.textContent = message;
-      alertEl.style.display = "block";
+    function showAlert(msg) {
+      const el = document.getElementById("escrowAlert");
+      el.textContent = msg;
+      el.style.display = "block";
     }
 
     function hideAlert() {
-      const alertEl = document.getElementById("escrowAlert");
-      alertEl.style.display = "none";
-      alertEl.textContent = "";
+      const el = document.getElementById("escrowAlert");
+      el.textContent = "";
+      el.style.display = "none";
     }
 
-    function setButtonsEnabled(enabled) {
+    function setEscrowButtonsEnabled(enabled) {
       document.getElementById("btnAccept").disabled = !enabled;
       document.getElementById("btnCancel").disabled = !enabled;
     }
 
-    function computeSecondsRemaining(createdAtMs) {
-      if (!created
+    function computeSecondsRemaining(createdAt) {
+      if (!createdAt) return 0;
+      const elapsed = Math.floor((Date.now() - createdAt) / 1000);
+      return Math.max(0, ESCROW_DURATION_SECONDS - elapsed);
+    }
+
+    function handleEscrowExpired() {
+      escrowActive = false;
+      setEscrowStatus("expired");
+      updateEscrowStatusLabelEscrow();
+      setEscrowButtonsEnabled(false);
+      showAlert("The escrow timer has expired. This transfer can no longer be accepted or canceled.");
+    }
+
+    function startEscrowTimer(initialSeconds) {
+      escrowSecondsRemaining = initialSeconds;
+      updateTimerDisplay();
+      if (escrowTimerId) clearInterval(escrowTimerId);
+
+      escrowTimerId = setInterval(() => {
+        escrowSecondsRemaining--;
+        if (escrowSecondsRemaining <= 0) {
+          escrowSecondsRemaining = 0;
+          clearInterval(escrowTimerId);
+          handleEscrowExpired();
+        }
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function initEscrowView() {
+      hideAlert();
+      const data = getEscrowData();
+      const intro = document.getElementById("escrowIntro");
+
+      if (!data) {
+        document.getElementById("escrowAmount").textContent = "—";
+        document.getElementById("escrowFrom").textContent = "—";
+        document.getElementById("escrowRecipientWallet").textContent = "—";
+        document.getElementById("escrowEscrowWallet").textContent = "—";
+        escrowActive = false;
+        escrowSecondsRemaining = 0;
+        updateTimerDisplay();
+        setEscrowButtonsEnabled(false);
+        setEscrowStatus("none");
+        updateEscrowStatusLabelEscrow();
+        intro.textContent = "No escrow transfer is currently stored. Create one from the Transfer view.";
+        return;
+      }
+
+      document.getElementById("escrowAmount").textContent = data.amountFormatted || "—";
+      document.getElementById("escrowFrom").textContent = data.fromWallet || "—";
+      document.getElementById("escrowRecipientWallet").textContent = data.recipientWallet || "—";
+      document.getElementById("escrowEscrowWallet").textContent = data.escrowWallet || "—";
+
+      const status = getEscrowStatus() || data.status || "none";
+      updateEscrowStatusLabelEscrow();
+
+      if (status === "active") {
+        const remaining = computeSecondsRemaining(data.createdAt);
+        if (remaining <= 0) {
+          handleEscrowExpired();
+        } else {
+          escrowActive = true;
+          setEscrowButtonsEnabled(true);
+          startEscrowTimer(remaining);
+        }
+      } else {
+        escrowActive = false;
+        escrowSecondsRemaining = 0;
+        updateTimerDisplay();
+        setEscrowButtonsEnabled(false);
+
+        if (status === "completed") {
+          showAlert("This escrow transfer has already been accepted and completed.");
+        } else if (status === "canceled") {
+          showAlert("This escrow transfer has been canceled. Funds have been returned to the sender wallet.");
+        } else if (status === "expired") {
+          showAlert("The escrow timer expired. This transfer can no longer be changed.");
+        } else {
+          intro.textContent = "No active escrow transfer is stored. Create one from the Transfer view.";
+        }
+      }
+    }
+
+    // --- init + event wiring ---
+    document.addEventListener("DOMContentLoaded", () => {
+      // Nav buttons
+      document.querySelectorAll("header nav button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const target = btn.getAttribute("data-view");
+          if (target) showView(target);
+        });
+      });
+
+      // Transfer form
+      document.getElementById("transferForm").addEventListener("submit", e => {
+        e.preventDefault();
+
+        const fromWallet = document.getElementById("fromWallet").value;
+        const recipientWallet = document.getElementById("recipientWallet").value.trim();
+        const escrowWallet = document.getElementById("escrowWallet").value.trim();
+        const amount = parseFloat(document.getElementById("amount").value.trim());
+
+        if (!recipientWallet || !escrow
