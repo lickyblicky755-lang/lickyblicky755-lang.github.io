@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aurora Wallet – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1rem 2rem;
+      background: #020617;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    header nav {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    header nav button {
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      background: #1f2937;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    header nav button.active {
+      background: #4f46e5;
+    }
+
+    header nav button:hover {
+      background: #4f46e5;
+    }
+
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #1f2937;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .row > .col {
+      flex: 1 1 200px;
+    }
+
+    .big-balance {
+      font-size: 2rem;
+      font-weight: 600;
+    }
+
+    .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 0.25rem;
+    }
+
+    .muted {
+      color: #9ca3af;
+      font-size: 0.85rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    table th, table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    table th {
+      font-weight: 500;
+      color: #9ca3af;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: #1f2937;
+      font-size: 0.75rem;
+      color: #e5e7eb;
+    }
+
+    .status-pill span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* Transfer / Escrow shared styles */
+
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #4f46e5;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #6b7280;
+      margin-top: 0.15rem;
+    }
+
+    .btn-primary, .btn-secondary, .btn-ghost {
+      border-radius: 999px;
+      padding: 0.6rem 1.1rem;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #1f2937;
+      color: #e5e7eb;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #9ca3af;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .timer {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+
+    .escrow-summary {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .escrow-summary div {
+      margin-bottom: 0.25rem;
+    }
+
+    .alert {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      background: #111827;
+      border: 1px solid #374151;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      header nav {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <header>
+      <h1>Aurora Wallet</h1>
+      <nav>
+        <button type="button" data-view="dashboard" class="active">Dashboard</button>
+        <button type="button" data-view="transfer">Transfer</button>
+        <!-- Escrow is not in nav; it appears after Send/Pay -->
+      </nav>
+    </header>
+
+    <main>
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view active">
+        <div class="card">
+          <h2>Overview</h2>
+          <div class="row">
+            <div class="col">
+              <div class="label">Available Balance</div>
+              <div class="big-balance" id="availableBalance">$4,792.00</div>
+              <div class="muted">
+                Base: <span id="baseBalance">$4,792.00</span> · In escrow:
+                <span id="escrowHeld">$0.00</span>
+              </div>
+            </div>
+            <div class="col">
+              <div class="label">Primary Wallet</div>
+              <div style="font-size:0.9rem;">aurora-main-9x7af2</div>
+              <div class="muted" style="margin-top:0.25rem;">Network: Multi-chain</div>
+            </div>
+            <div class="col">
+              <div class="label">Escrow Status</div>
+              <div class="status-pill">
+                <span class="dot"></span>
+                <span id="escrowStatusLabelDashboard">No active escrow</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Recent Activity</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>From / To</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>11/27/2025, 03:15 PM</td>
+                <td>Receive</td>
+                <td>+$1,200.00</td>
+                <td>Kraken Deposit</td>
+                <td>Confirmed</td>
+              </tr>
+              <tr>
+                <td>11/27/2025, 09:40 AM</td>
+                <td>Send</td>
+                <td>-$350.00</td>
+                <td>Ledger Vault 01</td>
+                <td>Completed</td>
+              </tr>
+              <tr>
+                <td>11/26/2025, 05:22 PM</td>
+                <td>Receive</td>
+                <td>+$890.00</td>
+                <td>Coinbase Funding</td>
+                <td>Confirmed</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="muted" style="margin-top:0.5rem;">
+            Escrow transfers created on the Transfer view are reflected in the balance and status above.
+          </p>
+        </div>
+      </section>
+
+      <!-- TRANSFER VIEW -->
+      <section id="view-transfer" class="view">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h2>Send to Escrow</h2>
+            <div class="status-pill">
+              <span class="dot"></span>
+              <span id="escrowStatusLabelTransfer">No active escrow</span>
+            </div>
+          </div>
+
+          <p class="muted">
+            Available balance: <span id="availableBalanceTransfer">$4,792.00</span>
+          </p>
+
+          <form id="transferForm">
+            <div class="field">
+              <label for="fromWallet">From wallet</label>
+              <select id="fromWallet" required>
+                <option value="Aurora Main Wallet">Aurora Main Wallet (Balance: $4,792.00)</option>
+                <option value="Aurora Trading Wallet">Aurora Trading Wallet (Balance: $0.00)</option>
+                <option value="Aurora Cold Storage">Aurora Cold Storage (Balance: $0.00)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="recipientWallet">Recipient wallet / BTC address</label>
+              <input
+                id="recipientWallet"
+                type="text"
+                required
+                placeholder="e.g. bc1qxy2kgdygj..."
+              />
+              <div class="hint">Final destination wallet for the transfer.</div>
+            </div>
+
+            <div class="field">
+              <label for="escrowWallet">Escrow wallet / BTC address</label>
+              <input
+                id="escrowWallet"
+                type="text"
+                required
+                placeholder="e.g. 3FZbgi29cpjq..."
+              />
+              <div class="hint">Escrow holding address used during the 15-minute window.</div>
+            </div>
+
+            <div class="field">
+              <label for="amount">Amount (USD)</label>
+              <input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                placeholder="1250.00"
+              />
+            </div>
+
+            <div class="btn-row">
+              <button type="submit" class="btn-primary">Send / Pay</button>
+              <button type="button" class="btn-ghost" onclick="document.getElementById('transferForm').reset();">
+                Clear
+              </button>
+            </div>
+
+            <p class="muted" style="margin-top:0.75rem;">
+              After clicking Send / Pay, funds move to escrow for 15 minutes and you will be taken to the Escrow view.
+            </p>
+          </form>
+        </div>
+      </section>
+
+      <!-- ESCROW VIEW -->
+      <section id="view-escrow" class="view">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h2>Escrow Confirmation</h2>
+            <div class="status-pill">
+              <span class="dot"></span>
+              <span id="escrowStatusLabelEscrow">Escrow status</span>
+            </div>
+          </div>
+
+          <p id="escrowIntro">
+            This transfer has been placed into escrow. You can accept or cancel it before the timer reaches zero.
+          </p>
+
+          <div class="escrow-summary">
+            <div><span class="label">Amount</span> <span id="escrowAmount">–</span></div>
+            <div><span class="label">From wallet</span> <span id="escrowFrom">–</span></div>
+            <div><span class="label">Recipient wallet</span> <span id="escrowRecipientWallet">–</span></div>
+            <div><span class="label">Escrow wallet</span> <span id="escrowEscrowWallet">–</span></div>
+          </div>
+
+          <div class="label" style="margin-top:1rem;">Time remaining</div>
+          <div class="timer" id="escrowTimer">15:00</div>
+
+          <div class="btn-row">
+            <button id="btnAccept" class="btn-primary" type="button">Accept</button>
+            <button id="btnCancel" class="btn-secondary" type="button">Cancel</button>
+            <button class="btn-ghost" type="button" id="btnBackDashboard">
+              Back to Dashboard
+            </button>
+          </div>
+
+          <div class="alert" id="escrowAlert" style="display:none;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // --- Shared state and helpers ---
+
+    const AURORA_BASE_BALANCE = 4792.00;
+    const ESCROW_DURATION_SECONDS = 15 * 60;
+
+    let escrowTimerId = null;
+    let escrowSecondsRemaining = 0;
+    let escrowActive = false;
+
+    function getEscrowStatus() {
+      return localStorage.getItem("auroraEscrowStatus") || "none";
+    }
+
+    function setEscrowStatus(status) {
+      localStorage.setItem("auroraEscrowStatus", status);
+    }
+
+    function getEscrowData() {
+      const raw = localStorage.getItem("auroraEscrowData");
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function saveEscrowData(data) {
+      localStorage.setItem("auroraEscrowData", JSON.stringify(data));
+    }
+
+    function formatCurrency(num) {
+      return "$" + Number(num || 0).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function computeAvailableBalance() {
+      const status = getEscrowStatus();
+      const data = getEscrowData();
+      let amountInEscrow = 0;
+      if (status === "active" && data && typeof data.amount === "number") {
+        amountInEscrow = data.amount;
+      }
+      return AURORA_BASE_BALANCE - amountInEscrow;
+    }
+
+    // --- View switching ---
+
+    function showView(name) {
+      const views = document.querySelectorAll(".view");
+      views.forEach(v => v.classList.remove("active"));
+      const target = document.getElementById("view-" + name);
+      if (target) target.classList.add("active");
+
+      const navButtons = document.querySelectorAll("header nav button");
+      navButtons.forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-view") === name);
+      });
+
+      if (name === "dashboard") {
+        updateDashboardUI();
+      } else if (name === "transfer") {
+        updateTransferUI();
+      } else if (name === "escrow") {
+        updateEscrowUI();
+      }
+    }
+
+    // --- Dashboard UI ---
+
+    function updateDashboardUI() {
+      const status = getEscrowStatus();
+      const data = getEscrowData();
+
+      let amountInEscrow = 0;
+      if (status === "active" && data && typeof data.amount === "number") {
+        amountInEscrow = data.amount;
+      }
+
+      const available = AURORA_BASE_BALANCE - amountInEscrow;
+
+      document.getElementById("baseBalance").textContent = formatCurrency(AURORA_BASE_BALANCE);
+      document.getElementById("availableBalance").textContent = formatCurrency(available);
+      document.getElementById("escrowHeld").textContent = formatCurrency(amountInEscrow);
+
+      const label = document.getElementById("escrowStatusLabelDashboard");
+      if (status === "active") {
+        label.textContent = "Escrow active";
+      } else if (status === "completed") {
+        label.textContent = "Escrow accepted (completed)";
+      } else if (status === "canceled") {
+        label.textContent = "Escrow canceled, funds returned";
+      } else if (status === "expired") {
+        label.textContent = "Escrow expired";
+      } else {
+        label.textContent = "No active escrow";
+      }
+    }
+
+    // --- Transfer UI ---
+
+    function updateTransferUI() {
+      const status = getEscrowStatus();
+      const available = computeAvailableBalance();
+
+      document.getElementById("availableBalanceTransfer").textContent = formatCurrency(available);
+
+      const label = document.getElementById("escrowStatusLabelTransfer");
+      if (status === "active") {
+        label.textContent = "Escrow active";
+      } else if (status === "completed") {
+        label.textContent = "Escrow accepted (completed)";
+      } else if (status === "canceled") {
+        label.textContent = "Escrow canceled, funds returned";
+      } else if (status === "expired") {
+        label.textContent = "Escrow expired";
+      } else {
+        label.textContent = "No active escrow";
+      }
+    }
+
+    // --- Escrow UI + timer ---
+
+    function updateEscrowStatusLabelEscrow() {
+      const label = document.getElementById("escrowStatusLabelEscrow");
+      const status = getEscrowStatus();
+
+      if (status === "active") {
+        label.textContent = "Escrow active";
+      } else if (status === "completed") {
+        label.textContent = "Escrow accepted (completed)";
+      } else if (status === "canceled") {
+        label.textContent = "Escrow canceled, funds returned";
+      } else if (status === "expired") {
+        label.textContent = "Escrow expired";
+      } else {
+        label.textContent = "No active escrow";
+      }
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      const mm = String(m).padStart(2, "0");
+      const ss = String(s).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById("escrowTimer").textContent = formatTime(escrowSecondsRemaining);
+    }
+
+    function showAlert(message) {
+      const alertEl = document.getElementById("escrowAlert");
+      alertEl.textContent = message;
+      alertEl.style.display = "block";
+    }
+
+    function hideAlert() {
+      const alertEl = document.getElementById("escrowAlert");
+      alertEl.style.display = "none";
+      alertEl.textContent = "";
+    }
+
+    function setButtonsEnabled(enabled) {
+      document.getElementById("btnAccept").disabled = !enabled;
+      document.getElementById("btnCancel").disabled = !enabled;
+    }
+
+    function computeSecondsRemaining(createdAtMs) {
+      if (!created
